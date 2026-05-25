@@ -1637,6 +1637,7 @@ function switchTab(panelId,btnId){
 let S = {};
 // ── GLOSSARY & TOOLTIP SYSTEM ───────────────────────────────────────────────
 const GLOSSARY = {
+  // ── Términos filosóficos clásicos ─────────────────────────────────────────
   'imperativo categórico': 'Principio moral de Kant: actúa solo según aquella máxima que puedas querer que se convierta en ley universal.',
   'eudaimonía': 'Término aristotélico para el florecimiento humano; el estado de bienestar y excelencia que constituye la vida bien vivida.',
   'utilidad': 'En ética utilitarista: la medida del bienestar o felicidad producida por una acción.',
@@ -1667,6 +1668,36 @@ const GLOSSARY = {
   'renta universal básica': 'Política de transferencia incondicional de ingresos a todos los ciudadanos, independientemente de su situación laboral.',
   'singularidad': 'En tecnología: el hipotético punto en que la IA supera la inteligencia humana, con consecuencias impredecibles.',
   'genocidio': 'Destrucción deliberada y sistemática de un grupo humano por razones nacionales, étnicas, raciales o religiosas.',
+  'autenticidad': 'En el existencialismo: vivir según las propias elecciones y valores reales, sin someterse a la presión del "qué dirán" o a roles impuestos.',
+  'mala fe': 'Concepto sartreano: actuar como si no tuviéramos libertad de elegir, atribuyendo nuestras decisiones a la situación, la costumbre o la naturaleza.',
+  'alteridad': 'La condición del otro en tanto radicalmente diferente; el reconocimiento de que el otro no es una proyección de uno mismo sino un ser irreductible.',
+  // ── Ética médica y bioética ───────────────────────────────────────────────
+  'secreto médico': 'Obligación ética y legal del médico de no revelar información obtenida en la relación clínica, con excepciones cuando hay riesgo grave para terceros.',
+  'bioética': 'Disciplina que estudia los problemas morales generados por las ciencias de la vida: medicina, biología, tecnología aplicada a seres humanos.',
+  'consentimiento informado': 'Derecho del paciente a recibir información completa sobre un procedimiento y a aceptarlo o rechazarlo libremente, sin coerción.',
+  'comité de ética': 'Organismo interdisciplinario que evalúa la corrección moral de protocolos de investigación o decisiones clínicas complejas.',
+  'insuficiencia renal': 'Incapacidad progresiva de los riñones para filtrar los desechos de la sangre; en estadios terminales requiere diálisis o trasplante.',
+  'plasticidad cerebral': 'Capacidad del cerebro para reorganizar sus conexiones neuronales en respuesta a la experiencia, el aprendizaje o el daño.',
+  'deterioro cognitivo': 'Declive de funciones mentales como la memoria, el razonamiento o el lenguaje; puede ser leve o progresar hacia la demencia.',
+  'VIH': 'Virus de Inmunodeficiencia Humana: ataca el sistema inmune. Con tratamiento antirretroviral, una persona VIH positiva puede tener una vida plena y no transmitir el virus.',
+  // ── Ética jurídica y derechos ─────────────────────────────────────────────
+  'memoria histórica': 'Proceso colectivo de recuperar y reconocer públicamente crímenes del pasado —especialmente de regímenes dictatoriales— para que no se repitan.',
+  'crimen de lesa humanidad': 'Acto grave cometido como parte de un ataque sistemático contra una población civil: incluye asesinato, tortura, desaparición forzada y persecución.',
+  'imprescriptibilidad': 'Principio jurídico según el cual ciertos delitos —especialmente los crímenes de lesa humanidad— no pueden prescribir con el paso del tiempo.',
+  'patrimonio cultural': 'Bienes materiales o inmateriales —obras de arte, archivos, monumentos— que pertenecen a una comunidad y expresan su identidad histórica.',
+  'integridad académica': 'Conjunto de principios éticos que rigen la vida universitaria: honestidad intelectual, reconocimiento de fuentes y rechazo del plagio.',
+  // ── Ética personal y social ───────────────────────────────────────────────
+  'arrepentimiento': 'Estado emocional y moral que surge al reconocer haber actuado de modo incorrecto; puede o no conducir a la reparación o al cambio de conducta.',
+  'lealtad': 'Compromiso sostenido con una persona, grupo o principio; en filosofía moral se debate cuándo la lealtad justifica proteger a alguien de consecuencias justas.',
+  'solidaridad': 'Principio que orienta a actuar en beneficio de quien sufre o está en desventaja, más allá del vínculo personal o el interés propio.',
+  'legado': 'Lo que una persona deja tras su muerte: bienes materiales, obras, valores o daños. En ética, cómo queremos ser recordados moldea nuestras decisiones presentes.',
+  'duelo': 'Proceso psicológico de adaptación a una pérdida significativa. Sus etapas —negación, ira, negociación, depresión, aceptación— no siguen un orden fijo.',
+  'empatía': 'Capacidad de comprender y compartir los estados emocionales de otro. Se distingue de la simpatía: la empatía no implica necesariamente estar de acuerdo.',
+  'lucidez': 'En contextos clínicos y jurídicos: estado de plena capacidad cognitiva para comprender la propia situación y tomar decisiones con discernimiento.',
+  'herencia': 'Transmisión de bienes, derechos y obligaciones de una persona fallecida a sus herederos. Puede incluir activos éticos: reputación, deudas morales, legados simbólicos.',
+  'filantropía': 'Donación voluntaria de recursos —dinero, tiempo, bienes— para el bien de desconocidos. Se distingue de la caridad por su escala y su dimensión estructural.',
+  'confidencialidad': 'Obligación de no divulgar información privada obtenida en el marco de una relación de confianza profesional o personal.',
+  'traición': 'Ruptura de un vínculo de lealtad o confianza. En ética se debate si la traición puede ser moralmente obligatoria cuando lo que se traiciona es injusto.',
 };
 
 const _tipEl  = document.getElementById('tip-box');
@@ -1710,30 +1741,59 @@ document.addEventListener('click',      _closeTipIfOutside);
 document.addEventListener('touchstart', _closeTipIfOutside, {passive:true});
 
 function wrapTerms(text) {
-  // Sort terms longest-first to avoid partial replacements
   const terms = Object.keys(GLOSSARY).sort((a,b) => b.length - a.length);
-  // Split by existing HTML tags to only operate on text nodes
-  const parts = text.split(/(<[^>]+>)/g);
-  return parts.map(part => {
-    if (part.startsWith('<')) return part; // HTML tag — leave untouched
-    let result = part;
-    const used = new Set();
-    terms.forEach((term, i) => {
+
+  // Two-pass approach:
+  // Pass 1: replace matching terms in TEXT NODES ONLY with placeholders
+  // Pass 2: swap placeholders for final HTML
+  // This prevents re-processing of already-generated span attributes.
+
+  // Split into alternating [textNode, tag, textNode, tag, ...] chunks.
+  // The regex matches self-contained tags; attributes with > are rare but
+  // we guard against them by matching quoted attribute values first.
+  const TAG_RE = /<(?:[^"'<>]|"[^"]*"|'[^']*')*>/g;
+  const parts = [];
+  let last = 0;
+  let m;
+  while ((m = TAG_RE.exec(text)) !== null) {
+    parts.push({ type: 'text', val: text.slice(last, m.index) });
+    parts.push({ type: 'tag',  val: m[0] });
+    last = m.index + m[0].length;
+  }
+  parts.push({ type: 'text', val: text.slice(last) });
+
+  // Build placeholder map
+  const placeholders = {};  // '\x00N\x00' -> final HTML
+  let pIdx = 0;
+  const used = new Set(); // one wrap per term per whole call (not per text node)
+
+  const processed = parts.map(part => {
+    if (part.type === 'tag') return part.val; // pass tags through unchanged
+    let chunk = part.val;
+    terms.forEach(term => {
       if (used.has(term)) return;
-      // Case-insensitive, word-boundary aware
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      const regex = new RegExp(`\\b(${escaped})\\b`, 'gi');
-      let matched = false;
-      result = result.replace(regex, (match) => {
-        if (matched) return match; // Only wrap first occurrence per text node
-        matched = true;
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`\\b(${escaped})\\b`, 'gi');
+      let firstMatch = false;
+      chunk = chunk.replace(re, (match) => {
+        if (firstMatch) return match;
+        firstMatch = true;
         used.add(term);
-        const def = GLOSSARY[term];
-        return `<span class="tip" tabindex="0" data-term="${term}" data-def="${def.replace(/"/g,'&quot;')}" onmouseenter="this.classList.add('tip-open');_showTip(this,this.dataset.term,this.dataset.def)" onmouseleave="_hideTip()" onclick="event.stopPropagation();_showTip(this,this.dataset.term,this.dataset.def)">${match}</span>`;
+        const def = GLOSSARY[term].replace(/"/g, '&quot;');
+        const key = `\x00${pIdx++}\x00`;
+        placeholders[key] =
+          `<span class="tip" tabindex="0" data-term="${term}" data-def="${def}"` +
+          ` onmouseenter="this.classList.add('tip-open');_showTip(this,this.dataset.term,this.dataset.def)"` +
+          ` onmouseleave="_hideTip()"` +
+          ` onclick="event.stopPropagation();_showTip(this,this.dataset.term,this.dataset.def)">${match}</span>`;
+        return key;
       });
     });
-    return result;
+    return chunk;
   }).join('');
+
+  // Swap placeholders (they're \x00N\x00 — never appear in real text or HTML attrs)
+  return processed.replace(/\x00\d+\x00/g, k => placeholders[k] || k);
 }
 
 // Alias: "Guardar Informe" en la pantalla de resultados usa saveSnapshot
